@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from jupyter_events import yaml
 
 # %matplotlib inline
 # %load_ext autoreload
@@ -37,7 +38,7 @@ def summary():
 
 # random seed generator
 rng = np.random.default_rng(0)
-
+# rng = np.random.seed(0)
 # 0>= random <10
 scan = rng.random(360) * 10  # (0~10)  360개
 
@@ -144,7 +145,9 @@ grade(2,
 
 
 ang_valid = angles[mask]      # 유효 측정의 각도만 (mask가 True인 각도만 추출)
-xy        = np.column_stack([valid * np.cos(ang_valid), valid * np.sin(ang_valid)])  # (N, 2) 형태로 합치기
+x = valid * np.cos(ang_valid)
+y = valid * np.sin(ang_valid)
+xy        = np.column_stack([x, y])  # (N, 2) 형태로 합치기
 
 
 print(xy.shape)
@@ -249,6 +252,7 @@ plt.show()
 th = np.radians(45)
 R = np.array([[np.cos(th), -np.sin(th)],
               [np.sin(th),  np.cos(th)]])
+
 # R.T는 파이썬 넘파이(NumPy) 배열에서 행렬의 전치(Transpose, 행과 열을 서로 맞바꾸는 것)를 의미합니다.
 # .T는 transpose() 메서드의 단축 속성입니다.
 xy_rot = xy @ R.T

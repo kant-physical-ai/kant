@@ -128,3 +128,11 @@ def shape(a: np.ndarray):
     :return:
     """
     return a.shape
+
+def transpose(a: np.ndarray):
+    """
+    배열의 전치(transpose)를 반환하는 함수입니다. 전치는 행과 열을 뒤바꾸는 연산입니다.
+    :param a:
+    :return:
+    """
+    return a.T
