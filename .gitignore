@@ -1,0 +1,7 @@
+/20260805/.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
