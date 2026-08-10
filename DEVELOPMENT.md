@@ -15,6 +15,42 @@ pip install ipympl scipy matplotlib pytest jupyterlab ipykernel numpy matplotlib
 pip freeze > requirements.txt    # 설치 목록을 기록 (팀 공유용)
 ```
 
+# development mode  module import
+```shell
+pip install -e .
+```
+
+# pip install   directory module
+```shell
+pip install .
+```
+
+# 1. 빌드 도구 설치
+```shell
+pip install build
+```
+
+# 2. 빌드 실행 (pyproject.toml이 있는 위치에서)
+```shell
+python -m build
+```
+
+# requirement.txt install
+```shell
+pip install -r requirements.txt
+```
+
+# pip uninstall
+```shell
+pip uninstall -r requirements.txt
+pip uninstall package_name
+```
+
+# pip list
+```shell
+pip list
+```
+
 # 방에서 나오기
 ```bash
 deactivate
