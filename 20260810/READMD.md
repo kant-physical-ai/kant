@@ -21,6 +21,16 @@ g++ -Wall -Wextra -std=c++17 -o hello ./hello_world.cpp
 ./hello
 ```
 
+# memory monitor compile
+```shell
+cmake -DCMAKE_BUILD_TYPE=Debug -DMEMORY_MONITOR=ON .
+make
+
+# or
+g++ -fsanitize=address -g -Wall -Wextra -std=c++17 -o stack_heap_monitor ./stack_heap_monitor.cpp
+```
+
+
 
 # practice
 - [hello_world](./hello_world.cpp)
@@ -36,3 +46,8 @@ g++ -Wall -Wextra -std=c++17 -o hello ./hello_world.cpp
 - [sensor](./sensor/SensorTest.cpp)
 5. **(심화) 누수 실험**: `new Motor()`를 delete 없이 반복하는 루프를 만들고, `valgrind`(또는 sanitizer `-fsanitize=address`)로 누수를 검출한 뒤, `make_unique`로 바꿔 누수가 사라지는지 확인해 보세
 - [stack_heap_monitor](./monitor/stack_heap_monitor.cpp)
+
+
+
+# 맨토님 결과
+- [hello_world](./result/hello_world.cpp)
