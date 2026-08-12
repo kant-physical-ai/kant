@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<robot name="my_robot">
+
+    <link name="base_footprint"/>
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="1 1 0.5"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <link name="lidar">
+        <visual>
+            <geometry>
+                <cylinder radius="0.05" length="0.1"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <!-- ========================================== -->
+    <!-- 2자유도 왼쪽 바퀴 구조 (Virtual Link 추가)   -->
+    <!-- ========================================== -->
+
+    <!-- 1. X축 회전을 담당할 중간 가상 링크 (시각적 요소 없음) -->
+    <link name="left_wheel_x_link"/>
+
+    <!-- 2. 실제 모양이 있는 최종 왼쪽 바퀴 링크 -->
+    <link name="left_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.2" length="0.05"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+        </visual>
+    </link>
+
+    <!-- 3. 첫 번째 조인트: base_link -> X축 회전 담당 가상 링크 -->
+    <joint name="left_wheel_x_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="left_wheel_x_link"/>
+        <origin xyz="-0.525 0.3 -0.2" rpy="0 0 0"/>
+        <axis xyz="1 0 0"/> <!-- X축 회전 -->
+    </joint>
+
+    <!-- 4. 두 번째 조인트: X축 링크 -> 진짜 바퀴 (Y축 회전 담당) -->
+    <joint name="left_wheel_y_joint" type="continuous">
+        <parent link="left_wheel_x_link"/>
+        <child link="left_wheel"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/> <!-- Y축 회전 -->
+    </joint>
+
+    <!-- ========================================== -->
+
+    <link name="right_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.2" length="0.05"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="1.5708 0 1.5708"/>
+        </visual>
+    </link>
+
+    <joint name="right_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+        <origin xyz="0.525 0.3 -0.2" rpy="0 0 0"/>
+        <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lidar_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="lidar"/>
+        <origin xyz="0 0 0.3" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_footprint_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+        <origin xyz="0 0 0.4" rpy="0 0 0"/>
+    </joint>
+</robot>
