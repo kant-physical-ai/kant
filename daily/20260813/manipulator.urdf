@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<robot name="manipulator">
+
+    <!-- ========================================== -->
+    <!-- 6자유도 수직 다관절 매니퓰레이터            -->
+    <!-- ========================================== -->
+
+    <!-- 고정 베이스 -->
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="0.3 0.3 0.1"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <!-- 조인트 1: 회전 베이스 (Yaw) -->
+    <link name="link1">
+        <visual>
+            <geometry>
+                <cylinder radius="0.09" length="0.2"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint1" type="revolute">
+        <parent link="base_link"/>
+        <child link="link1"/>
+        <origin xyz="0 0 0.15" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.14" upper="3.14" effort="100" velocity="2"/>
+    </joint>
+
+    <!-- 조인트 2: 어깨 (Pitch) -->
+    <link name="link2">
+        <visual>
+            <geometry>
+                <box size="0.08 0.08 0.45"/>
+            </geometry>
+            <origin xyz="0 0 0.25" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint2" type="revolute">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <origin xyz="0 0 0.2" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.57" upper="1.57" effort="100" velocity="2"/>
+    </joint>
+
+    <!-- 조인트 3: 팔꿈치 (Pitch) -->
+    <link name="link3">
+        <visual>
+            <geometry>
+                <box size="0.07 0.07 0.4"/>
+            </geometry>
+            <origin xyz="0 0 0.2" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint3" type="revolute">
+        <parent link="link2"/>
+        <child link="link3"/>
+        <origin xyz="0 0 0.45" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-2.36" upper="2.36" effort="80" velocity="2"/>
+    </joint>
+
+    <!-- 조인트 4: 손목 회전 1 (Yaw) -->
+    <link name="link4">
+        <visual>
+            <geometry>
+                <cylinder radius="0.05" length="0.12"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint4" type="revolute">
+        <parent link="link3"/>
+        <child link="link4"/>
+        <origin xyz="0 0 0.4" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.14" upper="3.14" effort="50" velocity="3"/>
+    </joint>
+
+    <!-- 조인트 5: 손목 회전 2 (Pitch) -->
+    <link name="link5">
+        <visual>
+            <geometry>
+                <cylinder radius="0.04" length="0.1"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint5" type="revolute">
+        <parent link="link4"/>
+        <child link="link5"/>
+        <origin xyz="0 0 0.12" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-1.57" upper="1.57" effort="30" velocity="3"/>
+    </joint>
+
+    <!-- 조인트 6: 손목 회전 3 (Roll) -->
+    <link name="link6">
+        <visual>
+            <geometry>
+                <cylinder radius="0.03" length="0.06"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint6" type="revolute">
+        <parent link="link5"/>
+        <child link="link6"/>
+        <origin xyz="0 0 0.1" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.14" upper="3.14" effort="20" velocity="4"/>
+    </joint>
+
+    <!-- 그리퍼 (Gripper) -->
+    <link name="gripper_base">
+        <visual>
+            <geometry>
+                <box size="0.05 0.08 0.05"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint_gripper" type="fixed">
+        <parent link="link6"/>
+        <child link="gripper_base"/>
+        <origin xyz="0 0 0.06" rpy="0 0 0"/>
+    </joint>
+
+    <link name="gripper_finger_left">
+        <visual>
+            <geometry>
+                <box size="0.04 0.01 0.08"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint_finger_left" type="prismatic">
+        <parent link="gripper_base"/>
+        <child link="gripper_finger_left"/>
+        <origin xyz="0 -0.015 0.02" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="0" upper="0.02" effort="10" velocity="0.5"/>
+    </joint>
+
+    <link name="gripper_finger_right">
+        <visual>
+            <geometry>
+                <box size="0.04 0.01 0.08"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </visual>
+    </link>
+
+    <joint name="joint_finger_right" type="prismatic">
+        <parent link="gripper_base"/>
+        <child link="gripper_finger_right"/>
+        <origin xyz="0 0.015 0.02" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="0" upper="0.02" effort="10" velocity="0.5"/>
+    </joint>
+</robot>

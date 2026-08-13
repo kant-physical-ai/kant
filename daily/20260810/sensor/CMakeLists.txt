@@ -8,7 +8,7 @@ add_executable(SensorTest SensorTest.cpp IMU.cpp Lidar.cpp)
 
 target_include_directories(SensorTest
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../utils
+        ../utils
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")

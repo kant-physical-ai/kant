@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(c_libs STATIC
     src/MathUtils.cpp
     src/Point3D.cpp
+    src/Vector3D.cpp
     src/Volume3D.cpp
 )
 

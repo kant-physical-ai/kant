@@ -5,6 +5,7 @@ from . import system_libs
 from .Point3D import Point3D
 from .Volume3D import Volume3D
 from .PointVolume3D import PointVolume3D
+from .Vector3D import Vector3D
 
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     'Point3D',
     'Volume3D',
     'PointVolume3D',
+    'Vector3D',
 ]
