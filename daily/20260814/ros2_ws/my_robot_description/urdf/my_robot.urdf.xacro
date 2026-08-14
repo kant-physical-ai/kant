@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<robot name="my_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- 기준 좌표계 (Base Link) -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.4 0.3 0.1"/> <!-- 가로 40cm, 세로 30cm, 높이 10cm 상자 -->
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- 라이다 센서 Link -->
+  <link name="laser_frame">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.04"/> <!-- 원통형 라이다 -->
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Joint (base_link 기준 앞으로 15cm, 위로 10cm 위치에 라이다 고정) -->
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_frame"/>
+    <origin xyz="0.15 0.0 0.1" rpy="0 0 0"/>
+  </joint>
+
+</robot>

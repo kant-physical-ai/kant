@@ -5,7 +5,7 @@ dist/
 build/
 
 /.idea/
-daily/20260813/ros2_ws_test/install/
-daily/20260813/ros2_ws_test/log/
-daily/20260813/ros2_ws/log/
-daily/20260813/ros2_ws/install/
+**/ros2_ws/install/
+**/ros2_ws/log/
+**/ros2_ws/build/
+/cpp/cmake-build-debug/
