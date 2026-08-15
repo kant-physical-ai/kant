@@ -1,0 +1,9 @@
+<robot name="base_arm">
+<link name="base"><visual><geometry><box size="0.4 0.4 0.1"/></geometry></visual><collision><geometry><box size="0.4 0.4 0.1"/></geometry></collision><inertial><mass value="100.0"/><inertia ixx="1.4166666666666672" iyy="1.4166666666666672" izz="2.6666666666666674" ixy="0" ixz="0" iyz="0"/></inertial></link>
+<link name="upper_arm"><visual><geometry><box size="0.15 0.15 0.5"/></geometry></visual><collision><geometry><box size="0.15 0.15 0.5"/></geometry></collision><inertial><mass value="5.0"/><inertia ixx="0.11354166666666668" iyy="0.11354166666666668" izz="0.01875" ixy="0" ixz="0" iyz="0"/></inertial></link>
+<joint name="shoulder_joint" type="revolute"><parent link="base"/><child link="upper_arm"/><origin xyz="0 0 0.05" rpy="0 0 0"/><axis xyz="0 1 0"/><limit lower="-1.5" upper="1.5" effort="1000.0" velocity="10.0"/></joint>
+<link name="forearm"><visual><geometry><box size="0.12 0.12 0.4"/></geometry></visual><collision><geometry><box size="0.12 0.12 0.4"/></geometry></collision><inertial><mass value="3.0"/><inertia ixx="0.04360000000000001" iyy="0.04360000000000001" izz="0.0072" ixy="0" ixz="0" iyz="0"/></inertial></link>
+<joint name="elbow_joint" type="revolute"><parent link="upper_arm"/><child link="forearm"/><origin xyz="0 0 0.28" rpy="0 0 0"/><axis xyz="0 1 0"/><limit lower="-2.0" upper="2.0" effort="1000.0" velocity="10.0"/></joint>
+<link name="hand"><visual><geometry><box size="0.1 0.3 0.2"/></geometry></visual><collision><geometry><box size="0.1 0.3 0.2"/></geometry></collision><inertial><mass value="1.0"/><inertia ixx="0.010833333333333334" iyy="0.0041666666666666675" izz="0.008333333333333333" ixy="0" ixz="0" iyz="0"/></inertial></link>
+<joint name="wrist_joint" type="revolute"><parent link="forearm"/><child link="hand"/><origin xyz="0 0 0.22" rpy="0 0 0"/><axis xyz="0 0 1"/><limit lower="-1.0" upper="1.0" effort="1000.0" velocity="10.0"/></joint>
+</robot>

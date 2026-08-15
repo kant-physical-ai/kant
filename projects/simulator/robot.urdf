@@ -1,0 +1,192 @@
+<?xml version="1.0"?>
+<robot name="my_robot">
+
+    <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+    </material>
+    <material name="blue">
+        <color rgba="0 0 1 1"/>
+    </material>
+    <material name="red">
+        <color rgba="1 0 0 1"/>
+    </material>
+    <material name="green">
+        <color rgba="0 1 0 1"/>
+    </material>
+
+    <link name="base_footprint"/>
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="1 1 0.5"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="gray"/>
+        </visual>
+    </link>
+
+    <link name="lidar">
+        <visual>
+            <geometry>
+                <cylinder radius="0.05" length="0.1"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="red"/>
+        </visual>
+    </link>
+
+    <link name="imu_link">
+        <visual>
+            <geometry>
+                <box size="0.1 0.1 0.05"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="green"/>
+        </visual>
+    </link>
+
+    <!-- 실제 모양이 있는 왼쪽 바퀴 링크 -->
+    <link name="left_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.2" length="0.05"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+            <material name="blue"/>
+        </visual>
+    </link>
+    <link name="right_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.2" length="0.05"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+            <material name="blue"/>
+        </visual>
+    </link>
+
+
+    <joint name="left_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="left_wheel"/>
+        <origin xyz="0 0.3 -0.2" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/> <!-- Y축 회전 -->
+    </joint>
+
+
+    <joint name="right_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+        <origin xyz="0 -0.3 -0.2" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+    </joint>
+
+    <joint name="lidar_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="lidar"/>
+        <origin xyz="0 0 0.3" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="imu_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="imu_link"/>
+        <origin xyz="0.45 0 0.28" rpy="0 0 0"/>
+    </joint>
+
+    <joint name="base_footprint_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+        <origin xyz="0 0 0.4" rpy="0 0 0"/>
+    </joint>
+
+    <ros2_control name="MotorSystem" type="actuator">
+        <hardware>
+            <plugin>mock_components/GenericSystem</plugin>
+        </hardware>
+        <joint name="left_wheel_joint">
+            <param name="type">motor</param>
+            <param name="error_rate">0.55</param>
+            <param name="hz">100</param>
+            <command_interface name="velocity"/>
+        </joint>
+        <joint name="right_wheel_joint">
+            <param name="type">motor</param>
+            <param name="error_rate">0.55</param>
+            <param name="hz">100</param>
+            <command_interface name="velocity"/>
+        </joint>
+    </ros2_control>
+
+    <ros2_control name="EncoderSystem" type="sensor">
+        <hardware>
+            <plugin>mock_components/GenericSystem</plugin>
+        </hardware>
+        <joint name="left_wheel_joint">
+            <param name="type">encoder</param>
+            <param name="error_rate">0.55</param>
+            <param name="hz">100</param>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="right_wheel_joint">
+            <param name="type">encoder</param>
+            <param name="error_rate">0.55</param>
+            <param name="hz">100</param>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+    </ros2_control>
+
+    <ros2_control name="ImuSystem" type="sensor">
+        <hardware>
+            <plugin>mock_components/GenericSystem</plugin>
+        </hardware>
+        <joint name="imu_joint">
+            <param name="type">imu</param>
+            <param name="error_rate">0.55</param>
+            <param name="hz">200</param>
+            <state_interface name="orientation.x"/>
+            <state_interface name="orientation.y"/>
+            <state_interface name="orientation.z"/>
+            <state_interface name="orientation.w"/>
+            <state_interface name="angular_velocity.x"/>
+            <state_interface name="angular_velocity.y"/>
+            <state_interface name="angular_velocity.z"/>
+            <state_interface name="linear_acceleration.x"/>
+            <state_interface name="linear_acceleration.y"/>
+            <state_interface name="linear_acceleration.z"/>
+        </joint>
+    </ros2_control>
+
+    <ros2_control name="LidarSystem" type="sensor">
+        <hardware>
+            <plugin>mock_components/GenericSystem</plugin>
+        </hardware>
+        <joint name="lidar_joint">
+            <param name="type">lidar</param>
+            <param name="error_rate">0.00</param>
+            <param name="hz">20</param>
+            <param name="num_rays">30</param>
+            <param name="max_range">8.0</param>
+            <param name="elevation_min">-0.26</param>
+            <param name="elevation_max">0.26</param>
+            <param name="elevation_rays">5</param>
+            <state_interface name="points"/>
+        </joint>
+    </ros2_control>
+
+    <real-world>
+        <objects>
+            <rect name="building1" origin="4.0 2.0 0.8" rpy="0 0 0.3" w="1.6" h="1.6" d="0.6"/>
+            <rect name="building2" origin="-4.5 1.5 0.8" rpy="0 0 -0.4" w="1.2" h="1.6" d="0.6"/>
+            <rect name="building3" origin="-3.0 -3.5 0.9" rpy="0 0 1.2" w="1.8" h="1.8" d="0.7"/>
+            <rect name="building4" origin="4.5 -2.5 0.7" rpy="0 0 0.8" w="1.4" h="1.4" d="0.5"/>
+            <rect name="wall_seg" origin="2.5 -4.0 0.4" rpy="0 0 -1.3" w="0.2" h="0.8" d="1.4"/>
+            <rect name="pillar1" origin="0.5 4.2 0.6" rpy="0 0 0" w="0.5" h="1.2" d="0.5"/>
+            <rect name="pillar2" origin="-2.0 4.5 0.6" rpy="0 0 0.5" w="0.5" h="1.2" d="0.5"/>
+            <arc name="tank" origin="0.0 6.0 0.5" rpy="0 0 0" r="1.0"/>
+            <arc name="sphere1" origin="5.5 4.5 0.4" rpy="0 0 0" r="0.6"/>
+            <arc name="sphere2" origin="-5.5 -0.5 0.4" rpy="0 0 0" r="0.5"/>
+        </objects>
+    </real-world>
+</robot>
