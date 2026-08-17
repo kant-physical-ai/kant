@@ -67,7 +67,7 @@ class RobotLocalization(Node):
 
     def read(self) -> OdometryReading:
         """OdomFrame에서 현재 pose 읽기."""
-        base_pose = self.odom_frame.base_in_odom
+        base_pose = self.odom_frame.odom_to_base_pose
         return OdometryReading(
             x=base_pose.x, y=base_pose.y, yaw=base_pose.yaw,
             linear_velocity=self._last_v,
@@ -97,7 +97,7 @@ class RobotLocalization(Node):
         dy = 0.0
         if abs(v) > 1e-4:
             # 현재 OdomFrame의 yaw 사용 (누적된 회전각)
-            current_yaw = self.odom_frame.base_in_odom.yaw
+            current_yaw = self.odom_frame.odom_to_base_pose.yaw
             dx = v * math.cos(current_yaw) * SIM_DT
             dy = v * math.sin(current_yaw) * SIM_DT
 
