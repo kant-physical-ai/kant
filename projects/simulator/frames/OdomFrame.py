@@ -30,8 +30,8 @@ class OdomFrame:
       _map_to_odom   : map  → odom       (SlamNode가 업데이트)
 
     외부에서 읽는 값:
-      base_in_odom   : odom 기준 base_link 위치  (raw odom, drift 있음)
-      base_in_map    : map  기준 base_link 위치  (slam 보정 후)
+      odom_to_base_pose  : odom에서 base_link로의 변환  (raw odom, drift 있음)
+      map_to_base_pose   : map에서 base_link로의 변환  (slam 보정 후)
     """
 
     def __init__(self, initial_pose: Pose2D = Pose2D(0.0, 0.0, 0.0)) -> None:
@@ -60,8 +60,8 @@ class OdomFrame:
         self._odom_to_base = Pose2D(x, y, angle_wrap(yaw))
 
     @property
-    def base_in_odom(self) -> Pose2D:
-        """odom 기준 base_link 위치 (raw, drift 있음)."""
+    def odom_to_base_pose(self) -> Pose2D:
+        """odom에서 base_link로의 변환 (raw odom, drift 있음)."""
         return self._odom_to_base
 
     # ── map → odom  (SlamNode 가 사용) ───────────────────
@@ -82,22 +82,22 @@ class OdomFrame:
         self._map_to_odom = Pose2D(x, y, angle_wrap(yaw))
 
     @property
-    def map_to_odom(self) -> Pose2D:
+    def map_to_odom_pose(self) -> Pose2D:
         return self._map_to_odom
 
     # ── map → base_link  (최종 world pose) ───────────────
 
     @property
-    def base_in_map(self) -> Pose2D:
+    def map_to_base_pose(self) -> Pose2D:
         """
-        map 기준 base_link 위치.
+        map에서 base_link로의 변환.
         T_map_base = T_map_odom.compose(T_odom_base)
         """
         return self._map_to_odom.compose(self._odom_to_base)
 
     def __repr__(self) -> str:
-        b = self.base_in_map
-        return (f"OdomFrame(base_in_map=({b.x:+.3f},{b.y:+.3f},{math.degrees(b.yaw):+.1f}°) "
-                f"map_to_odom=({self._map_to_odom.x:+.3f},"
+        b = self.map_to_base_pose
+        return (f"OdomFrame(map_to_base_pose=({b.x:+.3f},{b.y:+.3f},{math.degrees(b.yaw):+.1f}°) "
+                f"map_to_odom_pose=({self._map_to_odom.x:+.3f},"
                 f"{self._map_to_odom.y:+.3f},"
                 f"{math.degrees(self._map_to_odom.yaw):+.1f}°))")
