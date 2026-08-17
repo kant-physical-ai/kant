@@ -44,8 +44,19 @@ class OdomFrame:
 
     # ── odom → base_link  (RobotLocalization 이 사용) ────
 
-    def update_odom_to_base(self, x: float, y: float, yaw: float) -> None:
-        """odom → base_link transform 갱신 (encoder/IMU 적분 결과)."""
+    def update_odom_to_base(self, dx: float, dy: float, dyaw: float) -> None:
+        """
+        odom → base_link transform 갱신 (encoder/IMU 적분 결과).
+        dx, dy, dyaw 는 누적 보정값이 아니라 이번 스텝의 delta.
+        """
+        self._odom_to_base = Pose2D(
+            self._odom_to_base.x   + dx,
+            self._odom_to_base.y   + dy,
+            angle_wrap(self._odom_to_base.yaw + dyaw),
+        )
+
+    def set_odom_to_base(self, x: float, y: float, yaw: float) -> None:
+        """odom→base_link 절대값으로 설정."""
         self._odom_to_base = Pose2D(x, y, angle_wrap(yaw))
 
     @property
