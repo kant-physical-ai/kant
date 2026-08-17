@@ -2,8 +2,8 @@
 RobotLocalization.py
 
 담당: odom → base_link 변환 유지
-  - encoder/IMU 데이터로 odom 프레임 기준 base_link 위치 적분
-  - OdomFrame.update_odom_to_base() 호출 (delta 전달)
+  - encoder/IMU 데이터로 delta 계산 후 OdomFrame에 전달
+  - OdomFrame이 누적값 관리
   - map → odom 보정은 SlamNode 담당 (여기서는 건드리지 않음)
 
 dead zone:
@@ -39,7 +39,7 @@ class OdometryReading(NamedTuple):
 
 
 class RobotLocalization(Node):
-    """encoder + IMU → odom→base_link 적분. OdomFrame 을 통해 결과 공유."""
+    """encoder + IMU → odom→base_link delta 계산. OdomFrame이 누적값 관리."""
 
     def __init__(self, device_manager: DeviceManager,
                  odom_frame: OdomFrame,
@@ -53,15 +53,10 @@ class RobotLocalization(Node):
         self._encoders: dict[str, Encoder] = {}
         self._imu: Imu | None = None
 
-        self._x   = 0.0
-        self._y   = 0.0
-        self._yaw = 0.0
         self._last_v: float = 0.0
         self._last_w: float = 0.0
         self._prev_left_pos:  float | None = None
         self._prev_right_pos: float | None = None
-        self._prev_x: float = 0.0
-        self._prev_y: float = 0.0
         self._prev_yaw: float = 0.0
         self._setup()
 
@@ -71,8 +66,10 @@ class RobotLocalization(Node):
         self._imu = imus[0] if imus else None
 
     def read(self) -> OdometryReading:
+        """OdomFrame에서 현재 pose 읽기."""
+        base_pose = self.odom_frame.base_in_odom
         return OdometryReading(
-            x=self._x, y=self._y, yaw=self._yaw,
+            x=base_pose.x, y=base_pose.y, yaw=base_pose.yaw,
             linear_velocity=self._last_v,
             angular_velocity=self._last_w,
         )
@@ -80,36 +77,34 @@ class RobotLocalization(Node):
     def update(self) -> OdometryReading:
         v, w = self._wheel_odometry()
 
-        # ── yaw ──────────────────────────────────────────
+        # ── yaw delta ─────────────────────────────────────
+        dyaw = 0.0
         if self._imu is not None:
             imu     = self._imu.read()
             ang_z   = imu.angular_velocity[2]
             new_yaw = _yaw_from_quaternion(imu.orientation)
-            delta   = angle_wrap(new_yaw - self._yaw)
-            if abs(ang_z) > IMU_DEAD_ZONE or abs(delta) > IMU_QUAT_DEAD_ZONE:
-                self._yaw = new_yaw
+            dyaw    = angle_wrap(new_yaw - self._prev_yaw)
+            if abs(ang_z) > IMU_DEAD_ZONE or abs(dyaw) > IMU_QUAT_DEAD_ZONE:
+                self._prev_yaw = new_yaw
+            else:
+                dyaw = 0.0
         else:
             if abs(w) > IMU_DEAD_ZONE:
-                self._yaw = angle_wrap(self._yaw + w * SIM_DT)
+                dyaw = w * SIM_DT
 
-        # ── x, y ─────────────────────────────────────────
+        # ── x, y delta ────────────────────────────────────
+        dx = 0.0
+        dy = 0.0
         if abs(v) > 1e-4:
-            self._x += v * math.cos(self._yaw) * SIM_DT
-            self._y += v * math.sin(self._yaw) * SIM_DT
+            # 현재 OdomFrame의 yaw 사용 (누적된 회전각)
+            current_yaw = self.odom_frame.base_in_odom.yaw
+            dx = v * math.cos(current_yaw) * SIM_DT
+            dy = v * math.sin(current_yaw) * SIM_DT
 
         self._last_v, self._last_w = v, w
         
-        # Delta 계산: 절대값에서 이전값 빼기
-        dx = self._x - self._prev_x
-        dy = self._y - self._prev_y
-        dyaw = angle_wrap(self._yaw - self._prev_yaw)
-        
+        # Delta를 OdomFrame에 전달 (누적은 OdomFrame이 담당)
         self.odom_frame.update_odom_to_base(dx, dy, dyaw)
-        
-        # 이전값 업데이트
-        self._prev_x = self._x
-        self._prev_y = self._y
-        self._prev_yaw = self._yaw
         
         return self.read()
 
