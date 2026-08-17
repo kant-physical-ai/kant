@@ -3,7 +3,7 @@ RobotLocalization.py
 
 담당: odom → base_link 변환 유지
   - encoder/IMU 데이터로 odom 프레임 기준 base_link 위치 적분
-  - OdomFrame.update_odom_to_base() 호출
+  - OdomFrame.update_odom_to_base() 호출 (delta 전달)
   - map → odom 보정은 SlamNode 담당 (여기서는 건드리지 않음)
 
 dead zone:
@@ -60,6 +60,9 @@ class RobotLocalization(Node):
         self._last_w: float = 0.0
         self._prev_left_pos:  float | None = None
         self._prev_right_pos: float | None = None
+        self._prev_x: float = 0.0
+        self._prev_y: float = 0.0
+        self._prev_yaw: float = 0.0
         self._setup()
 
     def _setup(self) -> None:
@@ -95,7 +98,19 @@ class RobotLocalization(Node):
             self._y += v * math.sin(self._yaw) * SIM_DT
 
         self._last_v, self._last_w = v, w
-        self.odom_frame.update_odom_to_base(self._x, self._y, self._yaw)
+        
+        # Delta 계산: 절대값에서 이전값 빼기
+        dx = self._x - self._prev_x
+        dy = self._y - self._prev_y
+        dyaw = angle_wrap(self._yaw - self._prev_yaw)
+        
+        self.odom_frame.update_odom_to_base(dx, dy, dyaw)
+        
+        # 이전값 업데이트
+        self._prev_x = self._x
+        self._prev_y = self._y
+        self._prev_yaw = self._yaw
+        
         return self.read()
 
     def _wheel_odometry(self) -> tuple[float, float]:
