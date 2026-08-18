@@ -7,7 +7,7 @@ import pybullet as p
 
 from simulator.controller.Controller import Controller
 
-STEP_DEG = 50.0
+STEP_DEG = 10.0
 WHEEL_RADIUS = 0.2
 TRACK_WIDTH = 0.6
 

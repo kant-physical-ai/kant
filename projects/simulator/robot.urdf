@@ -123,14 +123,14 @@
         </hardware>
         <joint name="left_wheel_joint">
             <param name="type">encoder</param>
-            <param name="error_rate">0.55</param>
+            <param name="error_rate">0.02</param>
             <param name="hz">100</param>
             <state_interface name="position"/>
             <state_interface name="velocity"/>
         </joint>
         <joint name="right_wheel_joint">
             <param name="type">encoder</param>
-            <param name="error_rate">0.55</param>
+            <param name="error_rate">0.02</param>
             <param name="hz">100</param>
             <state_interface name="position"/>
             <state_interface name="velocity"/>
@@ -143,7 +143,7 @@
         </hardware>
         <joint name="imu_joint">
             <param name="type">imu</param>
-            <param name="error_rate">0.55</param>
+            <param name="error_rate">0.02</param>
             <param name="hz">200</param>
             <state_interface name="orientation.x"/>
             <state_interface name="orientation.y"/>
@@ -166,11 +166,11 @@
             <param name="type">lidar</param>
             <param name="error_rate">0.00</param>
             <param name="hz">20</param>
-            <param name="num_rays">30</param>
+            <param name="num_rays">100</param>
             <param name="max_range">8.0</param>
             <param name="elevation_min">-0.26</param>
             <param name="elevation_max">0.26</param>
-            <param name="elevation_rays">5</param>
+            <param name="elevation_rays">10</param>
             <state_interface name="points"/>
         </joint>
     </ros2_control>

@@ -154,11 +154,19 @@ class Simulator:
         while True:
             if p.getKeyboardEvents().get(27):
                 break
+            # 1. 장애물 이동
             realWorldManager.update()
+            # 2. 키보드 입력 → real body 바퀴 회전
             realWorldController.update()
+            # 3. real body 물리값 → 각 Device에 노이즈 포함해서 동기화
             sensorDriver.update()
+            # 4. Encoder+IMU → OdomFrame(odom→base_link) 업데이트
             robotLocalization.update()
+            # 5. Lidar scan → P2L ICP → OdomFrame(map→odom) 보정
+            slam.update()
+            # 6. 보정된 map pose(파란 body) 업데이트
             correctedController.update()
+            # 7. raw encoder signal(빨간 body) 업데이트
             signalController.update()
             if lidar is not None and time.time() - self._last_lidar_render > 0.1:
                 self._render_lidar_particles(lidar, self.real_body_id)

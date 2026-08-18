@@ -2,14 +2,21 @@
 RobotLocalization.py
 
 담당: odom → base_link 변환 유지
-  - encoder/IMU 데이터로 delta 계산 후 OdomFrame에 전달
-  - OdomFrame이 누적값 관리
-  - map → odom 보정은 SlamNode 담당 (여기서는 건드리지 않음)
+  - encoder delta + IMU yaw 로 differential drive odometry 계산
+  - midpoint integration 으로 회전 중 선이동 오차 최소화
+  - OdomFrame.update_odom_to_base() 로 누적
 
-dead zone:
-  - encoder delta < ENCODER_DEAD_ZONE  → 이동 없음 처리
-  - IMU angular velocity < IMU_DEAD_ZONE → yaw 변화 없음 처리
-  - IMU yaw 변화량 < IMU_QUAT_DEAD_ZONE → yaw 변화 없음 처리
+설계 원칙:
+  1. 선이동(v) 계산: encoder delta 로만 (IMU 가속도는 적분 오차가 큼)
+  2. 회전(dyaw) 계산: IMU quaternion 절대값 차분 우선, 없으면 encoder differential
+  3. midpoint integration: dx = v * cos(yaw + dyaw/2), dy = v * sin(yaw + dyaw/2)
+  4. dead zone: 노이즈 레벨 이하의 작은 delta 는 0 처리 (드리프트 억제)
+  5. IMU yaw 는 world frame 절대값 → odom 기준 상대 yaw 변화량으로 변환
+
+dead zone 상수:
+  ENCODER_DEAD_ZONE : encoder delta(rad) 이하면 이동 없음 처리
+  IMU_GYRO_DEAD     : IMU z 각속도(rad/s) 이하면 회전 없음 처리
+  IMU_YAW_DEAD      : IMU yaw delta(rad) 이하면 회전 없음 처리
 """
 from __future__ import annotations
 
@@ -23,10 +30,13 @@ from simulator.devices.Imu import Imu
 from simulator.frames.OdomFrame import OdomFrame
 from simulator.nodes.Node import Node
 
-SIM_DT             = 1.0 / 240.0
-ENCODER_DEAD_ZONE  = 1e-4   # rad
-IMU_DEAD_ZONE      = 1e-3   # rad/s
-IMU_QUAT_DEAD_ZONE = 5e-4   # rad
+# 시뮬레이션 타임스텝 (pybullet 240Hz)
+SIM_DT = 1.0 / 240.0
+
+# dead zone
+ENCODER_DEAD_ZONE = 1e-4   # rad — encoder delta 노이즈 바닥
+IMU_GYRO_DEAD     = 5e-3   # rad/s — IMU z 각속도 바닥
+IMU_YAW_DEAD      = 3e-4   # rad — IMU yaw delta 바닥
 
 
 class OdometryReading(NamedTuple):
@@ -39,12 +49,21 @@ class OdometryReading(NamedTuple):
 
 
 class RobotLocalization(Node):
-    """encoder + IMU → odom→base_link delta 계산. OdomFrame이 누적값 관리."""
+    """
+    Differential-drive odometry.
 
-    def __init__(self, device_manager: DeviceManager,
-                 odom_frame: OdomFrame,
-                 wheel_radius: float = 0.2,
-                 track_width:  float = 0.6) -> None:
+    encoder delta → 선이동 계산
+    IMU quaternion → yaw 변화량 계산 (없으면 encoder differential)
+    midpoint integration 으로 OdomFrame 업데이트
+    """
+
+    def __init__(
+        self,
+        device_manager: DeviceManager,
+        odom_frame: OdomFrame,
+        wheel_radius: float = 0.2,
+        track_width:  float = 0.6,
+    ) -> None:
         super().__init__("robot_localization", device_manager)
         self.odom_frame   = odom_frame
         self.wheel_radius = wheel_radius
@@ -53,11 +72,18 @@ class RobotLocalization(Node):
         self._encoders: dict[str, Encoder] = {}
         self._imu: Imu | None = None
 
+        # 속도 출력용
         self._last_v: float = 0.0
         self._last_w: float = 0.0
+
+        # encoder 누적 position 추적
         self._prev_left_pos:  float | None = None
         self._prev_right_pos: float | None = None
-        self._prev_yaw: float = 0.0
+
+        # IMU yaw 추적 (world frame 절대값)
+        self._imu_initialized: bool = False
+        self._prev_imu_yaw:    float = 0.0   # 직전 IMU world yaw
+
         self._setup()
 
     def _setup(self) -> None:
@@ -65,70 +91,123 @@ class RobotLocalization(Node):
         imus = self.device_manager.find_devices(Imu)
         self._imu = imus[0] if imus else None
 
+    # ── 외부 API ─────────────────────────────────────────
+
     def read(self) -> OdometryReading:
-        """OdomFrame에서 현재 pose 읽기."""
-        base_pose = self.odom_frame.odom_to_base_pose
+        """OdomFrame 에서 현재 odom pose 읽기."""
+        p = self.odom_frame.odom_to_base_pose
         return OdometryReading(
-            x=base_pose.x, y=base_pose.y, yaw=base_pose.yaw,
+            x=p.x, y=p.y, yaw=p.yaw,
             linear_velocity=self._last_v,
             angular_velocity=self._last_w,
         )
 
     def update(self) -> OdometryReading:
-        v, w = self._wheel_odometry()
+        """
+        1스텝 odometry 계산 → OdomFrame 업데이트.
 
-        # ── yaw delta ─────────────────────────────────────
-        dyaw = 0.0
-        if self._imu is not None:
-            imu     = self._imu.read()
-            ang_z   = imu.angular_velocity[2]
-            new_yaw = _yaw_from_quaternion(imu.orientation)
-            dyaw    = angle_wrap(new_yaw - self._prev_yaw)
-            if abs(ang_z) > IMU_DEAD_ZONE or abs(dyaw) > IMU_QUAT_DEAD_ZONE:
-                self._prev_yaw = new_yaw
-            else:
-                dyaw = 0.0
-        else:
-            if abs(w) > IMU_DEAD_ZONE:
-                dyaw = w * SIM_DT
+        순서:
+          1. encoder delta → 선이동 거리 d (m)
+          2. IMU (or encoder) → yaw 변화량 dyaw (rad)
+          3. midpoint integration → dx, dy
+          4. OdomFrame.update_odom_to_base(dx, dy, dyaw)
+        """
+        # ── 1. encoder delta → 선이동 ─────────────────────
+        d, dyaw_enc = self._encoder_delta()   # d=선거리(m), dyaw_enc=encoder yaw delta
 
-        # ── x, y delta ────────────────────────────────────
-        dx = 0.0
-        dy = 0.0
-        if abs(v) > 1e-4:
-            # 현재 OdomFrame의 yaw 사용 (누적된 회전각)
-            current_yaw = self.odom_frame.odom_to_base_pose.yaw
-            dx = v * math.cos(current_yaw) * SIM_DT
-            dy = v * math.sin(current_yaw) * SIM_DT
+        # ── 2. yaw delta ──────────────────────────────────
+        dyaw = self._imu_yaw_delta(fallback=dyaw_enc)
 
-        self._last_v, self._last_w = v, w
-        
-        # Delta를 OdomFrame에 전달 (누적은 OdomFrame이 담당)
+        # ── 3. 선속도/각속도 기록 ──────────────────────────
+        self._last_v = d / SIM_DT      # m/s
+        self._last_w = dyaw / SIM_DT   # rad/s
+
+        # 선이동이 없으면 계산 생략
+        if abs(d) < 1e-6 and abs(dyaw) < 1e-6:
+            return self.read()
+
+        # ── 4. midpoint integration ────────────────────────
+        # 회전하는 동안 호(arc)를 직선으로 근사할 때
+        # yaw 중간값 (yaw + dyaw/2) 방향으로 이동하면 오차가 크게 줄어듦
+        current_yaw = self.odom_frame.odom_to_base_pose.yaw
+        mid_yaw = current_yaw + dyaw * 0.5
+        dx = d * math.cos(mid_yaw)
+        dy = d * math.sin(mid_yaw)
+
+        # ── 5. OdomFrame 업데이트 ──────────────────────────
         self.odom_frame.update_odom_to_base(dx, dy, dyaw)
-        
+
         return self.read()
 
-    def _wheel_odometry(self) -> tuple[float, float]:
+    # ── 내부 계산 ─────────────────────────────────────────
+
+    def _encoder_delta(self) -> tuple[float, float]:
+        """
+        encoder position delta → (선거리 m, yaw delta rad).
+        encoder 누적 position (rad) 을 전 스텝과 비교해 delta 추출.
+        """
         left  = self._encoders.get("left_wheel_joint")
         right = self._encoders.get("right_wheel_joint")
+
         if left is None or right is None:
             return 0.0, 0.0
-        lp = left.read().position
+
+        lp = left.read().position    # 누적 rad
         rp = right.read().position
-        if self._prev_left_pos is None or self._prev_right_pos is None:
-            self._prev_left_pos, self._prev_right_pos = lp, rp
+
+        if self._prev_left_pos is None:
+            self._prev_left_pos  = lp
+            self._prev_right_pos = rp
             return 0.0, 0.0
+
         dl = lp - self._prev_left_pos
-        dr = rp - self._prev_right_pos
+        dr = rp - (self._prev_right_pos or 0.0)
         self._prev_left_pos  = lp
         self._prev_right_pos = rp
-        if abs(dl) < ENCODER_DEAD_ZONE: dl = 0.0
-        if abs(dr) < ENCODER_DEAD_ZONE: dr = 0.0
-        vl = dl / SIM_DT * self.wheel_radius
-        vr = dr / SIM_DT * self.wheel_radius
-        return (vl + vr) / 2.0, (vr - vl) / self.track_width
+
+        # dead zone: 노이즈 바닥 이하는 0 처리
+        if abs(dl) < ENCODER_DEAD_ZONE:
+            dl = 0.0
+        if abs(dr) < ENCODER_DEAD_ZONE:
+            dr = 0.0
+
+        # 선이동 거리 (m) = 바퀴 반지름 × 평균 회전각
+        d    = (dl + dr) * 0.5 * self.wheel_radius
+        # encoder differential yaw delta
+        dyaw = (dr - dl) * self.wheel_radius / self.track_width
+
+        return d, dyaw
+
+    def _imu_yaw_delta(self, fallback: float) -> float:
+        """
+        IMU quaternion → yaw delta (rad).
+        IMU 없거나 노이즈 판정 시 fallback(encoder yaw delta) 반환.
+        """
+        if self._imu is None:
+            return fallback
+
+        reading = self._imu.read()
+        imu_yaw = _yaw_from_quaternion(reading.orientation)
+        gz      = reading.angular_velocity[2]
+
+        # 최초 1회 초기화 (절대 기준점 설정)
+        if not self._imu_initialized:
+            self._prev_imu_yaw  = imu_yaw
+            self._imu_initialized = True
+            return fallback
+
+        dyaw = angle_wrap(imu_yaw - self._prev_imu_yaw)
+
+        # 노이즈 판정: 각속도와 yaw delta 모두 dead zone 이하면 0
+        if abs(gz) < IMU_GYRO_DEAD and abs(dyaw) < IMU_YAW_DEAD:
+            return 0.0
+
+        self._prev_imu_yaw = imu_yaw
+        return dyaw
 
 
 def _yaw_from_quaternion(quat: tuple[float, float, float, float]) -> float:
+    """quaternion (x, y, z, w) → yaw (rad)."""
     x, y, z, w = quat
-    return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+    return math.atan2(2.0 * (w * z + x * y),
+                      1.0 - 2.0 * (y * y + z * z))

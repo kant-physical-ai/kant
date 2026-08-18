@@ -214,13 +214,22 @@ class RealWorldManager(Updater):
         self.arcs.clear()
 
     def raycast(self, origin: tuple[float, float, float],
-                direction: tuple[float, float, float]) -> float | None:
+                direction: tuple[float, float, float],
+                static_only: bool = False) -> float | None:
+        """
+        static_only=True: 고정 오브젝트만 raycast (SLAM용).
+        static_only=False: 동적 포함 전체 raycast (lidar 센서 시뮬용).
+        """
         best: float | None = None
         for rect in self.rects:
+            if static_only and rect.is_dynamic:
+                continue
             dist = self._ray_rect(origin, direction, rect)
             if dist is not None and (best is None or dist < best):
                 best = dist
         for arc in self.arcs:
+            if static_only and arc.is_dynamic:
+                continue
             dist = self._ray_arc(origin, direction, arc)
             if dist is not None and (best is None or dist < best):
                 best = dist

@@ -12,6 +12,7 @@ from simulator.devices.Imu import Imu
 from simulator.devices.Lidar import Lidar, LidarPoint
 
 SIM_DT = 1.0 / 240.0
+SIM_HZ = 240.0
 
 
 class SensorDriveSynchronizer(Updater):
@@ -26,6 +27,14 @@ class SensorDriveSynchronizer(Updater):
         self._lidar_height: float = 0.0
         self._prev_joint: dict[str, tuple[float, float]] = {}
         self._prev_lin_vel: tuple[float, float, float] | None = None
+        self._prev_base_orn: tuple[float, float, float, float] | None = None
+        self._prev_ang_vel: tuple[float, float, float] | None = None
+        self._prev_lidar_points: list[LidarPoint] | None = None
+        self._frame = 0
+        # Device 별 skip 주기: hz > 0 이면 SIM_HZ/device_hz 프레임마다 1회 실행
+        self._encoder_skip: int = 1
+        self._imu_skip: int = 1
+        self._lidar_skip: int = 1
         self._setup()
 
     def _setup(self) -> None:
@@ -39,6 +48,20 @@ class SensorDriveSynchronizer(Updater):
             parent_frame_pos = p.getJointInfo(self.real_body_id, lidar_joint)[14]
             self._lidar_height = parent_frame_pos[2]
 
+        # Device hz → skip 주기 계산 (hz=0 이면 매 프레임)
+        # skip = max(1, round(SIM_HZ / device_hz))
+        #
+        # encoder는 항상 매 프레임 sync (skip=1 고정).
+        # 이유: RobotLocalization이 매 프레임 enc.position - prev를 계산하므로
+        #       encoder_skip>1 이면 skip된 프레임에서 dl=0, sync 프레임에서 2배 delta
+        #       → 같은 노이즈가 더 불규칙하게 적용되어 odom 오차가 증가.
+        #       encoder 읽기는 joint state 조회라 비용이 거의 없음.
+        self._encoder_skip = 1
+        self._imu_skip = max(1, round(SIM_HZ / self._imu.hz)) if (self._imu and self._imu.hz > 0) else 1
+        self._lidar_skip = max(1, round(SIM_HZ / self._lidar.hz)) if (self._lidar and self._lidar.hz > 0) else 1
+        print(f"[SensorDriveSynchronizer] encoder_skip={self._encoder_skip} "
+              f"imu_skip={self._imu_skip} lidar_skip={self._lidar_skip}")
+
     def _find_joint(self, name: str) -> int:
         for i in range(p.getNumJoints(self.real_body_id)):
             if p.getJointInfo(self.real_body_id, i)[1].decode() == name:
@@ -46,9 +69,18 @@ class SensorDriveSynchronizer(Updater):
         raise ValueError(f"joint '{name}' not found")
 
     def update(self) -> None:
-        self._sync_encoders()
-        self._sync_imu()
-        self._sync_lidar()
+        frame = self._frame
+        # urdf hz 파라미터 기반 주파수 제어:
+        #   encoder_skip = round(SIM_HZ / enc_hz)  예) 240/100 = 2 → 매 2프레임마다 1회
+        #   imu_skip     = round(SIM_HZ / imu_hz)  예) 240/200 = 1 → 매 프레임
+        #   lidar_skip   = round(SIM_HZ / lid_hz)  예) 240/20  = 12 → 매 12프레임마다 1회
+        if frame % self._encoder_skip == 0:
+            self._sync_encoders()
+        if frame % self._imu_skip == 0:
+            self._sync_imu()
+        if frame % self._lidar_skip == 0:
+            self._sync_lidar()
+        self._frame += 1
 
     def _sync_encoders(self) -> None:
         for name, encoder in self._encoders.items():
@@ -58,6 +90,8 @@ class SensorDriveSynchronizer(Updater):
             if prev is None:
                 self._prev_joint[name] = (pos, vel)
                 continue
+            if prev == (pos, vel):
+                continue   # 값 변화 없음 → set_state 생략 (노이즈 재적용 방지)
             prev_pos, _ = prev   # velocity는 prev 불필요, 현재값 직접 사용
             self._prev_joint[name] = (pos, vel)
             # position: delta(rad), velocity: 현재 절대값(rad/s)
@@ -68,6 +102,12 @@ class SensorDriveSynchronizer(Updater):
             return
         _, base_orn = p.getBasePositionAndOrientation(self.real_body_id)
         lin_vel, ang_vel = p.getBaseVelocity(self.real_body_id)
+        if (self._prev_base_orn == base_orn
+                and self._prev_lin_vel == lin_vel
+                and self._prev_ang_vel == ang_vel):
+            return   # 값 변화 없음 → set_state 생략 (노이즈 재적용 방지)
+        self._prev_base_orn = base_orn
+        self._prev_ang_vel = ang_vel
         self._imu.set_state(self._acceleration(lin_vel), ang_vel, base_orn)
 
     def _sync_lidar(self) -> None:
@@ -108,6 +148,9 @@ class SensorDriveSynchronizer(Updater):
                     continue
                 points.append(LidarPoint(azimuth=azimuth, elevation=elevation,
                                          distance=distance))
+        if points == self._prev_lidar_points:
+            return   # 값 변화 없음 → set_state 생략 (노이즈 재적용 방지)
+        self._prev_lidar_points = points
         self._lidar.set_state(tuple(points))
 
     def _acceleration(self, lin_vel: tuple[float, float, float]) -> tuple[float, float, float]:

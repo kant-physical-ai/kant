@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import random
 from typing import NamedTuple
 
 from simulator.devices.Device import Device
@@ -42,15 +43,21 @@ class Imu(Device[ImuReading, float, None]):
             self._apply_error(angular_velocity[1]),
             self._apply_error(angular_velocity[2]),
         )
-        # quaternion에 noise 적용 후 반드시 renormalize (norm=1 보장)
-        qx = self._apply_error(orientation[0])
-        qy = self._apply_error(orientation[1])
-        qz = self._apply_error(orientation[2])
-        qw = self._apply_error(orientation[3])
-        norm = math.sqrt(qx*qx + qy*qy + qz*qz + qw*qw)
-        if norm > 1e-9:
-            qx, qy, qz, qw = qx/norm, qy/norm, qz/norm, qw/norm
-        self._orientation = (qx, qy, qz, qw)
+        # orientation 노이즈: quaternion 성분에 직접 걸면 renormalize 후 yaw가
+        # 비선형적으로 왜곡됨 (error_rate=0.55 에서 평균 16° 오차).
+        # → yaw만 추출해서 노이즈를 선형으로 적용하고 다시 quaternion으로 변환.
+        # roll/pitch는 0으로 고정 (2D 주행 가정).
+        qx, qy, qz, qw = orientation
+        yaw = math.atan2(2.0 * (qw * qz + qx * qy),
+                         1.0 - 2.0 * (qy * qy + qz * qz))
+        if self.error_rate > 0.0:
+            yaw += yaw * random.uniform(-self.error_rate, self.error_rate)
+        self._orientation = (
+            0.0,
+            0.0,
+            math.sin(yaw / 2.0),
+            math.cos(yaw / 2.0),
+        )
 
     def write(self, value: float) -> None:
         raise NotImplementedError(f"[{self.name}] Imu는 쓰기가 불가능합니다.")
