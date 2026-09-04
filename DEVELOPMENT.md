@@ -15,6 +15,14 @@ pip install ipympl scipy matplotlib pytest jupyterlab ipykernel numpy matplotlib
 pip freeze > requirements.txt    # 설치 목록을 기록 (팀 공유용)
 ```
 
+# juppyter kernel 등록
+```shell
+python -m ipykernel install --user --name=pose_lab --display-name "Python (pose_lab)"
+jupyter kernelspec list
+jupyter lab --version
+jupyter lab
+```
+
 # development mode  module import
 ```shell
 pip install -e .
