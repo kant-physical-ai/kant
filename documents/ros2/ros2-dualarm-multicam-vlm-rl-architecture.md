@@ -306,8 +306,9 @@ flowchart TD
 
 ---
 
-## 8. 참고: TurtleBot3 문서군과의 관계
+## 8. 참고: 다른 문서와의 관계
 
+- **RL을 "상위 개념"(Hierarchical RL)으로 쓰는 대안 버전**: [ros2-dualarm-multicam-hierarchical-rl-architecture.md](./ros2-dualarm-multicam-hierarchical-rl-architecture.md) — 이 문서의 `vlm_task_planner_node` 자리를 학습된 메타 정책(`hrl_meta_policy_node`)으로 교체한 자매 문서. 하드웨어/인지/SLAM/Nav2+RL 보정 레이어는 동일하고, 최상위 계획 방식과 돌발상황 재계획 로직만 다릅니다.
 - 구조적으로 [ros2-turtlebot3-manipulator-hybrid.md](./ros2-turtlebot3-manipulator-hybrid.md)의 "Nav2 전역 + RL 지역" 아이디어를 **잔차 보정형**으로 변형하고, 여기에 **멀티카메라 인지(YOLO+Voting+Tracking)**와 **VLM 기반 물체ID 타겟팅**, **SLAM 폐루프 예외처리**를 추가로 결합한 상위 호환 시스템입니다.
 - 단일암 TurtleBot3 5종 문서: [룰베이스](./ros2-turtlebot3-manipulator-example.md) · [E2E](./ros2-turtlebot3-manipulator-e2e.md) · [RL(Mapless)](./ros2-turtlebot3-manipulator-simtoreal-rl.md) · [하이브리드](./ros2-turtlebot3-manipulator-hybrid.md) · [VLA](./ros2-turtlebot3-manipulator-vla.md)
 - 개념적 원형: [ros2-architecture.md](./ros2-architecture.md)
