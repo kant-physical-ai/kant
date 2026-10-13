@@ -9,3 +9,5 @@ build/
 **/ros2_ws/log/
 **/ros2_ws/build/
 **/cmake-build-debug/
+
+.venv/
