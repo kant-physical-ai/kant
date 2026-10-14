@@ -1,0 +1,14 @@
+{
+  "test": "generated planar stereo, not Isaac Sim",
+  "odometry_messages": 179,
+  "last_xyz": [
+    5.0702907174127176e-05,
+    -0.3030674457550049,
+    -0.0018275033216923475
+  ],
+  "map_directory": "/work/synthetic_cuvslam_4d_sk5dx",
+  "map_files": [
+    "data.mdb"
+  ],
+  "map_save_success": true
+}

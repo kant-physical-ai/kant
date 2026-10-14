@@ -1,0 +1,24 @@
+{
+  "test": "Isaac Sim 6.1 stereo rig to cuVSLAM, not Waffle dynamics",
+  "image_counts": [
+    136,
+    120
+  ],
+  "matched_image_pairs": 120,
+  "raw_image_counts": [
+    136,
+    120
+  ],
+  "non_increasing_stamp_counts": [
+    0,
+    0
+  ],
+  "odometry_count": 130,
+  "baseline_m": 0.095,
+  "estimated_x_span_m": 0.38319289684295654,
+  "last_xyz": [
+    0.38319289684295654,
+    0.017983008176088333,
+    -0.002992146648466587
+  ]
+}

@@ -1,0 +1,4 @@
+ARG ISAAC_ROS_BASE
+FROM ${ISAAC_ROS_BASE}
+USER root
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ros-lyrical-isaac-ros-cuvslam ros-lyrical-xacro ros-lyrical-tf2-ros ros-lyrical-rviz2 && rm -rf /var/lib/apt/lists/*

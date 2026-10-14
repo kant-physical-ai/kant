@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.16)
+project(waffle_slam_course)
+find_package(ament_cmake REQUIRED)
+install(DIRECTORY launch config models worlds DESTINATION share/${PROJECT_NAME})
+ament_package()

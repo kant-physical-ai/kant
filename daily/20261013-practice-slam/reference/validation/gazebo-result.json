@@ -1,0 +1,15 @@
+{
+  "scope": "existing OpenArm Gazebo, not Waffle",
+  "messages": {
+    "clock": 263,
+    "joint_states": 43
+  },
+  "controllers": {
+    "right_gripper_controller": "active",
+    "left_gripper_controller": "active",
+    "right_joint_trajectory_controller": "active",
+    "left_joint_trajectory_controller": "active",
+    "joint_state_broadcaster": "active"
+  },
+  "passed": true
+}

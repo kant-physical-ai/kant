@@ -1,0 +1,27 @@
+--- a/cartographer_ros/CMakeLists.txt
++++ b/cartographer_ros/CMakeLists.txt
+@@ -72,7 +72,6 @@
+   src/node_constants.cpp
+   src/node.cpp
+   src/node_options.cpp
+-  src/offline_node.cpp
+   src/playable_bag.cpp
+   src/ros_log_sink.cpp
+   src/ros_map.cpp
+@@ -164,7 +163,7 @@
+   rclcpp::rclcpp
+ )
+ 
+-add_executable(cartographer_offline_node src/offline_node_main.cpp)
++add_executable(cartographer_offline_node src/offline_node_main.cpp src/offline_node.cpp)
+ target_include_directories(cartographer_offline_node PRIVATE
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
+@@ -173,6 +172,7 @@
+ target_link_libraries(cartographer_offline_node PRIVATE
+   ${PROJECT_NAME}
+   cartographer
++  urdf::urdf
+   gflags
+   rclcpp::rclcpp
+ )

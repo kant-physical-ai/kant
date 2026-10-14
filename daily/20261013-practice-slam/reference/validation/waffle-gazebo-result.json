@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "scan_count": 145,
+  "odom_count": 721,
+  "clock_count": 14427,
+  "map_count": 15,
+  "displacement_m": 0.7765934097693538,
+  "map_size": [
+    111,
+    114
+  ],
+  "final_yaw_rad": 0.9655419566260577,
+  "map_directory": "$HOME/waffle-lyrical-slam/maps/gazebo_wb7qvxdl"
+}

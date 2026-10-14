@@ -1,0 +1,5 @@
+{
+  "test": "Isaac Sim 6.1 startup and ROS bridge extension enablement",
+  "updates": 30,
+  "ros_bridge_enabled": true
+}

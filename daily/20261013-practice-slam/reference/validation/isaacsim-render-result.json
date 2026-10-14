@@ -1,0 +1,1 @@
+{"test": "Isaac Sim stereo rig rendering, not Waffle dynamics", "frames": 900, "resolution": [640, 480], "baseline_m": 0.095, "camera_info_transport": "native Lyrical rclpy with calibration from USD"}

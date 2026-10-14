@@ -1,0 +1,8 @@
+{
+  "test": "synthetic CPU ROS test, not Isaac Sim",
+  "width": 132,
+  "height": 132,
+  "resolution": 0.05000000074505806,
+  "known_cells": 11116,
+  "occupied_cells": 266
+}
